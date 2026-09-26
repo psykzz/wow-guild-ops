@@ -33,11 +33,44 @@ WoW addons run in a sandboxed Lua environment with deliberate restrictions. Thes
 5. **WoW Forever is a new client/build (beta as of Sept 2026)** with its own reported bugs: SavedVariables not persisting across restarts (a client bug, since patched by Blizzard per community reports), Lua errors in certain UI interactions, and a modern/retail-style addon API rather than the old Classic Era one. **Workaround:** target WoW Forever's addon API directly (do not assume Classic Era API compatibility); track Blizzard's beta known-issues threads and build defensively (e.g., write-then-verify SavedVariables patterns) until the platform stabilizes post-launch (targeted Nov 2026).
 6. **No cross-version guarantee.** Classic Era, Retail, and WoW Forever have diverging Guild UI APIs and versions. **Workaround:** v1 targets WoW Forever only (see README goals); abstract any Blizzard API calls behind a thin compatibility layer from day one so Classic Era/Retail support later doesn't require a rewrite.
 
+## Bootstrap Template Research (issue #2 resolution)
+
+### Framework survey
+
+- **Ace3 remains the most practical full-stack addon framework** for GuildOps' likely needs: `AceAddon-3.0` for lifecycle/modules, `AceDB-3.0` for profile-backed SavedVariables, `AceConfig-3.0` + `AceGUI-3.0` for options UIs, and `AceComm-3.0` for addon-message sync.
+- **Lighter alternatives exist, but the template ecosystem is weaker there.** Native Blizzard APIs plus hand-rolled SavedVariables/slash-command code are viable for a small bootstrap, and author-specific libraries/frameworks exist, but none of the starter repos surveyed showed stronger WoW Forever alignment than a selective Ace3 approach.
+- **Implication for GuildOps:** start with the smallest addon skeleton that preserves folder/TOC/package discipline, then add only the Ace3 pieces we actually need instead of inheriting a large retail-focused boilerplate wholesale.
+
+### Template comparison
+
+| Repo | Project layout / TOC conventions | SavedVariables / versioning pattern | Options / slash boilerplate | Maintenance / client notes | WoW Forever note | GuildOps fit |
+|---|---|---|---|---|---|---|
+| `layday/wow-addon-template` | Single `Addon/` folder containing `Addon.toc` + `Addon.lua`; `pkgmeta.yaml` pulls `LibStub` and `AceAddon-3.0` into `Addon/libs`; TOC loads libs before core. | No `SavedVariables` entry in the sample TOC, so there is no schema, version field, or migration example yet. | No options panel or slash-command boilerplate; sample only creates an `AceAddon` and prints in `OnInitialize()`. | Mature packaging/release-oriented template, but the sample TOC still targets interface `90002`, so it is a dated retail baseline rather than a current-client skeleton. | No explicit WoW Forever support found; compatibility is unverified. | **Best reference for minimal structure**, but it needs GuildOps-specific persistence, slash commands, and sync scaffolding added manually. |
+| `tshallenberger/wow-addon-template` | `src/` folder with `WowAddonTemplate.toc`, `embeds.xml`, XML/UI stub, and a committed `src/Libs/` tree containing Ace3 plus extras such as `LibDataBroker` and range-check libraries. | Declares `## SavedVariables: WowAddonTemplateDB` and initializes `AceDB-3.0` profile defaults, but does not include a schema version or migration path. | Loads `AceConsole`, `AceEvent`, and `AceHook`, but ships no ready-made options table/panel and no actual slash-command registration. | Updated in 2026, but still a generic placeholder template with `{{INTERFACE}}`/`{{VERSION}}` tokens and a heavier embedded-lib bundle than GuildOps needs on day one. | No explicit WoW Forever support found; compatibility is unverified. | Useful as an **Ace3 embed/AceDB reference**, but probably too heavyweight to copy directly. |
+| `kimgod1142/wow-addon-template` | Named addon folder with separate core/UI/options/localization files and a straightforward `.toc`; includes `.pkgmeta` and GitHub release workflow. | Declares a single flat `ADDON_NAMEdb` table and applies defaults manually; no schema version or migration example. | Strongest boilerplate of the three for a custom options window and slash commands (`/NAME`, `/NAME config`, `/NAME test`, `/NAME reset`). | Active in 2026 and more feature-complete, but clearly aimed at a retail-style spell/UI addon (`## Interface: 120001`, `C_Spell`, row-pool UI helpers) rather than guild-data tooling. | No explicit WoW Forever support found; compatibility is unverified. | Good **native-API options/slash reference**, but too UI-specific to adopt wholesale. |
+
+### Recommendation
+
+Use a **minimal from-scratch bootstrap modeled after `layday/wow-addon-template`'s folder/package discipline**, then selectively add only the Ace3 modules GuildOps clearly benefits from:
+
+- `AceAddon-3.0` for lifecycle/module structure
+- `AceDB-3.0` for SavedVariables defaults/profiles
+- `AceComm-3.0` when officer-note / ledger sync begins
+
+Defer `AceConfig-3.0` / `AceGUI-3.0` until we know whether GuildOps should expose a Blizzard Settings panel, a custom guild-frame augmentation, or both.
+
+This gives us a clean starting point while preserving the project-specific requirements that none of the surveyed templates solve yet:
+
+- a **versioned SavedVariables schema with explicit migrations**
+- a **thin Blizzard API compatibility layer** for WoW Forever-specific guild APIs
+- a **guild-data-first architecture** rather than a combat/UI-heavy sample addon
+
+No surveyed template advertised **explicit WoW Forever compatibility**, so the bootstrap spike must still validate the final TOC/interface value and guild-related API calls against the WoW Forever client directly.
+
 ## Open Questions (to resolve during research/prototyping sub-issues)
 
 - Does WoW Forever's Guild UI expose different/broken officer-note APIs than Classic Era, or does it inherit Retail's version wholesale?
 - What is the practical addon-message rate limit for guild-wide roster/ledger sync at scale (e.g., 200+ member guilds)?
-- Which existing template repos (e.g., a well-structured Ace3-based addon skeleton) should GuildOps start from, to avoid reinventing boilerplate (saved-variable schemas, options panels, slash commands)?
 - What does a minimal, non-intrusive UI look like — a standalone panel, or an overlay/augmentation of the existing Blizzard Guild UI frame?
 
 ## Non-Functional Constraints
