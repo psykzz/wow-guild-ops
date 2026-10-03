@@ -86,7 +86,7 @@ No surveyed template advertised **explicit WoW Forever compatibility**, so the b
 - On the exact WoW Forever build targeted for v1, is `C_GuildInfo.SetNote` still silently blocked for addons, or has Blizzard restored any safe note-write path?
 - What `QueryGuildBankLog` re-scan cadence is safe on Forever before UI hitching or delayed/dropped `GUILDBANKLOG_UPDATE` behavior becomes noticeable?
 - What bootstrap/resync UX is acceptable if a full guild-state catch-up takes many seconds under normal addon-message throttling?
-- What does a minimal, non-intrusive UI look like — a standalone panel, or an overlay/augmentation of the existing Blizzard Guild UI frame?
+- ~~UI: standalone panel vs overlay?~~ Resolved: overlay the Blizzard roster/member popout for v1, standalone panel only as fallback. See `docs/ui-approach.md`.
 
 ## Non-Functional Constraints
 
