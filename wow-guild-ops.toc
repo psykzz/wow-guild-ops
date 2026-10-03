@@ -1,0 +1,7 @@
+## Interface: 120000
+## Title: GuildOps
+## Notes: Guild management tools
+## Version: 0.1.0
+## SavedVariables: GuildOpsDB
+
+GuildOps.lua
