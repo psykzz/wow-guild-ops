@@ -47,6 +47,14 @@ WoW addons run in a sandboxed Lua environment with deliberate restrictions. Thes
 6. **No cross-version guarantee.** Classic Era, Retail, and WoW Forever have diverging Guild UI APIs and versions. **Workaround:** v1 targets WoW Forever only (see README goals); abstract any Blizzard API calls behind a thin compatibility layer from day one so Classic Era/Retail support later doesn't require a rewrite.
 7. **Addon-message sends are explicitly throttleable/failable on the modern client branch.** The modern `C_ChatInfo` API reports failures such as invalid prefix, guild/group membership errors, chat lockdown, and transport throttling instead of guaranteeing delivery. **Workaround:** register prefixes early, check send results, batch/queue sync traffic, and treat guild sync as eventually consistent rather than real time.
 
+## Guild Bank Ledger Capture Prototype (issue #7)
+
+`GuildOps.lua` listens for `GUILDBANKFRAME_OPENED` (queries each tab plus the money log via `QueryGuildBankLog`) and `GUILDBANKLOG_UPDATE` (reads cached data with `GetNumGuildBankTransactions`/`GetGuildBankTransaction` and the money equivalents), appending new entries to `GuildOpsDB.ledger`.
+
+- Log entries carry **no unique ID and only relative ages** (years/months/days/hours ago), so absolute time is estimated at scan time. De-duplication matches on tab/type/name/item/count/amount plus estimated time within a tolerance based on age granularity (2h / 2d / 62d / 2y); each stored entry matches at most one scanned entry per pass, so repeated identical transactions are still kept.
+- Limitation: very old entries (day-or-coarser granularity) have imprecise timestamps.
+- Not yet verified in-client on WoW Forever (retained depth, the money-log tab index `MAX_GUILDBANK_TABS + 1`, whether the modern client still exposes these globals vs `C_GuildBank`, `/reload` and restart persistence). Use `/gops ledger` to print the entry count while testing.
+
 ## Bootstrap Template Research (issue #2 resolution)
 
 ### Framework survey
